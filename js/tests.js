@@ -31,8 +31,8 @@ var Util = {
 //Minimap canvas stuff
 var canvas = document.getElementById('minimap');
 var ctx = canvas.getContext('2d');
-var width = canvas.width = 500;
-var height = canvas.height = 500;
+var width = canvas.width = 400;
+var height = canvas.height = 400;
 
 
 //Map stuff
@@ -49,7 +49,7 @@ var map = {
         [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     ],
-    scale: 50,
+    scale: 40,
     width: 10,
     height: 10
 };
@@ -58,10 +58,10 @@ var map = {
 //Player stuff
 var player = {
     x: 3,
-    y: 7.5,
+    y: 1.5,
     size: 10,
     color: 'red',
-    rot: Util.toRadians(-30)
+    rot: Util.toRadians(45)
 };
 
 
