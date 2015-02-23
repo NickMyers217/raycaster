@@ -108,7 +108,7 @@ Canvas.prototype.renderMiniMap = function(map, player, projection) {
 	this.ctx.stroke();
 
 	for(var i = 0; i < projection.rays.length; i++) {
-		this.ctx.strokeStyle = 'rgba(0,100,0,0.3)';
+		this.ctx.strokeStyle = 'yellow';
 		this.ctx.lineWidth = 0.5;
 		this.ctx.beginPath();
 		this.ctx.moveTo(player.x * map.scale, player.y * map.scale);
