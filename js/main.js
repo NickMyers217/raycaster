@@ -140,10 +140,37 @@ Projection.prototype.castRays = function(map, player) {
 		var ray = this.rays[i];
 		var angle = ray.getAngle(player, this.rayCount, i, this.stripWidth, this.viewDistance);
 		var hits = ray.getRayHit(angle, map, player);
+		var distX = player.x - hits.x;
+		var distY = player.y - hits.y;
+		var distance = Math.sqrt(distX * distX + distY * distY) * Math.cos(player.rot - angle);
+    	var wallHeight = (1 / distance) * this.viewDistance;
 
 		ray.angle = angle;
 		ray.hitX = hits.x;
 		ray.hitY = hits.y;
+		ray.distance = distance;
+		ray.wallHeight = wallHeight;
+	}
+};
+
+Projection.prototype.render = function() {
+	var ctx = this.canvas.ctx;
+
+	ctx.fillStyle = 'darkgray';
+	ctx.fillRect(0, 0, this.width, this.height / 2);
+	ctx.fillStyle = 'gray';
+	ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
+
+	for(var i = 0; i < this.rays.length; i++) {
+		var ray = this.rays[i];
+
+		ctx.fillStyle = 'green';
+	    ctx.fillRect(
+	        (this.width / 2) + (-this.rayCount / 2 + i) * this.stripWidth,
+	        (this.height / 2) - (ray.wallHeight / 2),
+	        this.stripWidth,
+	        ray.wallHeight
+	    );	
 	}
 };
 
@@ -258,6 +285,7 @@ window.onload = function main() {
 		projection.castRays(map, player);
 		projection.canvas.render();
 		minimap.renderMiniMap(map, player, projection);
+		projection.render();
 
 		setTimeout(loop, 1000 / 30);
 	}

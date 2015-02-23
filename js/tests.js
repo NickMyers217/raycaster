@@ -27,11 +27,12 @@ var Util = {
     }
 };
 
-//Canvas stuff
+
+//Minimap canvas stuff
 var canvas = document.getElementById('minimap');
 var ctx = canvas.getContext('2d');
-var width = canvas.width = 1000;
-var height = canvas.height = 1000;
+var width = canvas.width = 500;
+var height = canvas.height = 500;
 
 
 //Map stuff
@@ -39,10 +40,10 @@ var map = {
     level: [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
         [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-        [1, 0, 0, 1, 0, 1, 0, 0, 0, 1],
-        [1, 0, 0, 1, 0, 1, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
         [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
@@ -57,15 +58,18 @@ var map = {
 //Player stuff
 var player = {
     x: 3,
-    y: 3,
+    y: 7.5,
     size: 10,
     color: 'red',
-    rot: Util.toRadians(90)
+    rot: Util.toRadians(-30)
 };
 
 
 //Setup a projection
+document.getElementById('screen').width = 600;
+document.getElementById('screen').height = 480;
 var projection = {
+    ctx: document.getElementById('screen').getContext('2d'), //A drawing context
     width: 600, //Width in px
     height: 480, //Height in px
     stripCount: 300, //Divide the screen into strips
@@ -74,6 +78,10 @@ var projection = {
     distance: (600 / 2) / Math.tan(Util.toRadians(60) / 2), //The distance the proj is from the player
     rays: [] //An array of rays
 };
+projection.ctx.fillStyle = 'gray';
+projection.ctx.fillRect(0, 0, projection.width, projection.height / 2);
+projection.ctx.fillStyle = 'darkgray';
+projection.ctx.fillRect(0, projection.height / 2, projection.width, projection.height / 2);
 
 
 //Draw the minimap and player
@@ -109,25 +117,22 @@ for(var i = 0; i < projection.stripCount; i++) {
     var ray = {};
     ray.screenPos = (-projection.stripCount / 2 + i) * projection.stripWidth;
     ray.diagDist = Math.sqrt(ray.screenPos * ray.screenPos + projection.distance * projection.distance);
-    ray.angle = player.rot + Math.asin(ray.screenPos / ray.diagDist);
-
-    ray.angle %= Util.twoPI;
-    if(ray.angle < 0) ray.angle += Util.twoPI;
-
     projection.rays.push(ray);
 }
 
 
-//Filter our ray array a bit and pick a few rays to test
-var testRays = projection.rays.filter(function(ray, i) {
-    if(i == 0 || i == projection.rays.length - 1 || i == projection.rays.length / 2)
-        return true;
-});
+//Get the angle of each ray
+for(var i = 0; i < projection.stripCount; i++) {
+    var ray = projection.rays[i];
+    ray.angle = player.rot + Math.asin(ray.screenPos / ray.diagDist);
+    ray.angle %= Util.twoPI;
+    if(ray.angle < 0) ray.angle += Util.twoPI;
+}
 
 
 //Raycasting algorithm development
-for(var i = 0; i < testRays.length; i++) {
-    var ray = testRays[i]; //The ray we want to test
+for(var i = 0; i < projection.rays.length; i++) {
+    var ray = projection.rays[i]; //The ray we want to test
 
     /* Vertical Intersection Test */
         var right = (ray.angle > Util.twoPI * 0.75 || ray.angle < Util.twoPI * 0.25); //Is the ray going right or left?
@@ -168,9 +173,8 @@ for(var i = 0; i < testRays.length; i++) {
         //Test while we are in the boundaries of the map
         while(x >= 0 && x < map.width && y >= 0 && y < map.height) {
             //Get the coordinates on the map the ray is touching
-            var mapY = up ? Math.floor(y) - 1 : Math.floor(x);
+            var mapY = up ? Math.floor(y) - 1 : Math.floor(y);
             var mapX = Math.floor(x);
-            console.log(mapX, mapY);
 
             if(map.level[mapY][mapX] == 1) {
                 var distX = player.x - x;
@@ -191,8 +195,22 @@ for(var i = 0; i < testRays.length; i++) {
         }
     /* End horizontal test */
 
-    Util.drawLine('red', player.x, player.y, ray.hitX, ray.hitY);
+    //Draw the ray on the minimap
+    Util.drawLine('rgba(200,200,0,0.25)', player.x, player.y, ray.hitX, ray.hitY);
+
+    //Correct the ray distance for the fisheye effect
+    ray.distance = Math.sqrt(ray.distance);
+    ray.distance *= Math.cos(player.rot - ray.angle);
+
+    //Get the height of the wall that the ray is touching
+    ray.wallHeight = (1 / ray.distance) * projection.distance;
+
+    //Draw the slice on the projection
+    projection.ctx.fillStyle = 'green';
+    projection.ctx.fillRect(
+        (projection.width / 2) + ray.screenPos,
+        (projection.height / 2) - (ray.wallHeight / 2),
+        projection.stripWidth,
+        ray.wallHeight
+    );
 }
-
-
-
